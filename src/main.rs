@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use flate2::read::GzDecoder;
 use std::io::{Read, BufReader, BufRead, Write, stdout};
 use std::collections::HashSet;
-use std::env::args;
 use clap::Parser;
 
 fn parse_genelist(genelist_filename: String) -> HashSet<String> {
@@ -88,6 +87,17 @@ struct Cli {
     /// Output filename. If not provided will print to STDOUT.
     #[arg(long, short='o')]
     output: Option<String>,
+
+    /// Reference genome version.
+    #[clap(value_enum)]
+    #[arg(long, short='r', default_value_t=ReferenceGenome::Hg38)]
+    reference: ReferenceGenome,
+}
+
+#[derive(clap::ValueEnum, Clone, Debug, Eq, PartialEq)]
+enum ReferenceGenome {
+   Hg19,
+   Hg38,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -111,12 +121,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let mut wtr = csv::WriterBuilder::new().delimiter(b'\t').from_writer(writer);
+    let ref_genome = if cli.reference == ReferenceGenome::Hg38 {"GRCh38"} else {"GRCh37"};
     for result in tsv_reader.deserialize() {
         let mut record: ClinVarRecord = result?;
           if use_gene_list && !gene_set.contains(&record.GeneSymbol) {
               continue;
           }
-          if record.Assembly == "GRCh38" {
+          if record.Assembly == ref_genome {
               if record.Name.contains("c.") {
                   let rec_name_fields: Vec<&str> = record.Name.split(":").collect();
 
