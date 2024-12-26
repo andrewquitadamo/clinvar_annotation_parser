@@ -16,11 +16,6 @@ fn parse_genelist(genelist_filename: &String) -> HashSet<String> {
     return gene_set;
 }
 
-// We don't need to derive `Debug` (which doesn't require Serde), but it's a
-// good habit to do it for all your types.
-//
-// Notice that the field names in this struct are NOT in the same order as
-// the fields in the CSV data!
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[allow(non_snake_case)]
@@ -76,7 +71,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let gene_set = parse_genelist(genelist_filename);
     let filename = "variant_summary.txt.gz";
     let file = File::open(filename).expect("Failed to open input file");
-//    let mut tsv_reader = csv::ReaderBuilder::new().delimiter(b'\t').from_reader(file);
     let reader_box: Box<dyn Read> = if filename.ends_with(".gz") {Box::new(GzDecoder::new(file))} else {Box::new(file)};
     let mut tsv_reader = csv::ReaderBuilder::new().delimiter(b'\t').from_reader(reader_box); println!("{:?}", tsv_reader.headers());
     for result in tsv_reader.deserialize() {
