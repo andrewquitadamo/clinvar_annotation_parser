@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let filename = "variant_summary.txt.gz";
     let file = File::open(filename).expect("Failed to open input file");
     let reader_box: Box<dyn Read> = if filename.ends_with(".gz") {Box::new(GzDecoder::new(file))} else {Box::new(file)};
-    let mut tsv_reader = csv::ReaderBuilder::new().delimiter(b'\t').from_reader(reader_box); println!("{:?}", tsv_reader.headers());
+    let mut tsv_reader = csv::ReaderBuilder::new().delimiter(b'\t').from_reader(reader_box); 
     for result in tsv_reader.deserialize() {
         let record: ClinVarRecord = result?;
         if gene_set.contains(&record.GeneSymbol) && record.Assembly == "GRCh38" {
