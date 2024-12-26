@@ -1,4 +1,4 @@
-use std::{error::Error, io, process};
+use std::error::Error;
 use std::fs::File;
 use serde::Deserialize;
 use flate2::read::GzDecoder;
@@ -78,23 +78,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         if gene_set.contains(&record.GeneSymbol) && record.Assembly == "GRCh38" {
               if record.Name.contains("c.") {
                   let rec_name_fields: Vec<&str> = record.Name.split(":").collect();
-                  let mut c_dot_raw = "";
-                  if rec_name_fields.len() > 1 {
-                      c_dot_raw = rec_name_fields[1];
+
+                  let c_dot_raw: &str = if rec_name_fields.len() > 1 {
+                      rec_name_fields[1]
                   }
                   else {
-                      c_dot_raw = rec_name_fields[0];
-                  }
-                  let mut c_dot: &str = "NA";
-                  let mut p_dot = "NA";
+                      rec_name_fields[0]
+                  };
+
                   if c_dot_raw.contains("p.") {
-                      (c_dot, p_dot) = c_dot_raw.split_once("(").unwrap();
+                      let (c_dot, mut p_dot) = c_dot_raw.split_once("(").unwrap();
                       let p_dot = &str::replace(p_dot, ")", "");
                       println!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}", record.GeneSymbol, record.Name, c_dot, p_dot, record.Chromosome, record.Start, record.Stop, record.ReferenceAlleleVCF, record.AlternateAlleleVCF, record.PositionVCF, record.Type, record.ClinicalSignificance, record.allele_id, record.PhenotypeIDS, record.PhenotypeList, record.ReviewStatus, record.Assembly)
                   }
                   else {
-                      c_dot = c_dot_raw;
-                      println!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}", record.GeneSymbol, record.Name, c_dot, p_dot, record.Chromosome, record.Start, record.Stop, record.ReferenceAlleleVCF, record.AlternateAlleleVCF, record.PositionVCF, record.Type, record.ClinicalSignificance, record.allele_id, record.PhenotypeIDS, record.PhenotypeList, record.ReviewStatus, record.Assembly)
+                      let c_dot = c_dot_raw;
+                      println!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}", record.GeneSymbol, record.Name, c_dot, "NA", record.Chromosome, record.Start, record.Stop, record.ReferenceAlleleVCF, record.AlternateAlleleVCF, record.PositionVCF, record.Type, record.ClinicalSignificance, record.allele_id, record.PhenotypeIDS, record.PhenotypeList, record.ReviewStatus, record.Assembly)
                   }
               }
               else {
