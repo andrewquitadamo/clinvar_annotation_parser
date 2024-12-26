@@ -1,8 +1,8 @@
 use std::error::Error;
 use std::fs::File;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use flate2::read::GzDecoder;
-use std::io::{Read, BufReader, BufRead};
+use std::io::{Read, BufReader, BufRead, stdout};
 use std::collections::HashSet;
 use std::env::args;
 
@@ -16,18 +16,37 @@ fn parse_genelist(genelist_filename: &String) -> HashSet<String> {
     return gene_set;
 }
 
-#[derive(Debug, Deserialize)]
+fn default_val() -> String {
+    "NA".to_string()
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 #[allow(non_snake_case)]
 struct ClinVarRecord {
+    GeneSymbol: String,
     #[serde(rename="#AlleleID")]
     allele_id: i32,
     Type: String,
     Name: String,
-//    GeneID: i32,
-    GeneSymbol: String,
-//    HGNC_ID: String,
+    #[serde(default = "default_val")]
+    c_dot: String,
+    #[serde(default = "default_val")]
+    p_dot: String,
     ClinicalSignificance: String,
+    PhenotypeIDS: String,
+    PhenotypeList: String,
+    Assembly: String,
+    Chromosome: String,
+    Start: i32,
+    Stop: i32,
+    ReviewStatus: String,
+    PositionVCF: String,
+    ReferenceAlleleVCF: String,
+    AlternateAlleleVCF: String,
+    OtherIDs: String,
+//    GeneID: i32,
+//    HGNC_ID: String,
 //    ClinSigSimple: String,
 //    LastEvaluated: String,
 //    #[serde(rename="RS# (dbSNP)")]
@@ -35,28 +54,17 @@ struct ClinVarRecord {
 //    #[serde(rename="nsv/esv (dbVar)")]
 //    nsv_esv_dbVar: String,
 //    RCVaccession: String,
-    PhenotypeIDS: String,
-    PhenotypeList: String,
 //    Origin: String,
 //    OriginSimple: String,
-    Assembly: String,
-    ChromosomeAccession: String,
-    Chromosome: String,
-    Start: i32,
-    Stop: i32,
-    ReferenceAllele: String,
-    AlternateAllele: String,
-    Cytogenetic: String,
-    ReviewStatus: String,
+//    ChromosomeAccession: String,
+//    ReferenceAllele: String,
+//    AlternateAllele: String,
+//    Cytogenetic: String,
 //    NumberSubmitters: String,
 //    Guidelines: String,
 //    TestedInGTR: String,
-    OtherIDs: String,
 //    SubmitterCategories: String,
-    VariationID: String,
-    PositionVCF: String,
-    ReferenceAlleleVCF: String,
-    AlternateAlleleVCF: String,
+//    VariationID: String,
 //    SomaticClinicalImpact: String,
 //    SomaticClinicalImpactLastEvaluated: String,
 //    ReviewStatusClinicalImpact: String,
@@ -73,8 +81,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let file = File::open(filename).expect("Failed to open input file");
     let reader_box: Box<dyn Read> = if filename.ends_with(".gz") {Box::new(GzDecoder::new(file))} else {Box::new(file)};
     let mut tsv_reader = csv::ReaderBuilder::new().delimiter(b'\t').from_reader(reader_box); 
+    let mut wtr = csv::WriterBuilder::new().delimiter(b'\t').from_writer(stdout());
     for result in tsv_reader.deserialize() {
-        let record: ClinVarRecord = result?;
+        let mut record: ClinVarRecord = result?;
         if gene_set.contains(&record.GeneSymbol) && record.Assembly == "GRCh38" {
               if record.Name.contains("c.") {
                   let rec_name_fields: Vec<&str> = record.Name.split(":").collect();
@@ -87,19 +96,23 @@ fn main() -> Result<(), Box<dyn Error>> {
                   };
 
                   if c_dot_raw.contains("p.") {
-                      let (c_dot, mut p_dot) = c_dot_raw.split_once("(").unwrap();
+                      let (c_dot, p_dot) = c_dot_raw.split_once("(").unwrap();
                       let p_dot = &str::replace(p_dot, ")", "");
-                      println!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}", record.GeneSymbol, record.Name, c_dot, p_dot, record.Chromosome, record.Start, record.Stop, record.ReferenceAlleleVCF, record.AlternateAlleleVCF, record.PositionVCF, record.Type, record.ClinicalSignificance, record.allele_id, record.PhenotypeIDS, record.PhenotypeList, record.ReviewStatus, record.Assembly)
+                      record.c_dot = c_dot.to_string();
+                      record.p_dot = p_dot.to_string();
+                      wtr.serialize(record)?;
                   }
                   else {
                       let c_dot = c_dot_raw;
-                      println!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}", record.GeneSymbol, record.Name, c_dot, "NA", record.Chromosome, record.Start, record.Stop, record.ReferenceAlleleVCF, record.AlternateAlleleVCF, record.PositionVCF, record.Type, record.ClinicalSignificance, record.allele_id, record.PhenotypeIDS, record.PhenotypeList, record.ReviewStatus, record.Assembly)
+                      record.c_dot = c_dot.to_string();
+                      wtr.serialize(record)?;
                   }
               }
               else {
-                  println!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}", record.GeneSymbol, record.Name, "NA", "NA", record.Chromosome, record.Start, record.Stop, record.ReferenceAlleleVCF, record.AlternateAlleleVCF, record.PositionVCF, record.Type, record.ClinicalSignificance, record.allele_id, record.PhenotypeIDS, record.PhenotypeList, record.ReviewStatus, record.Assembly)
+                    wtr.serialize(record)?;
               }
         }
     }
+    wtr.flush()?;
     Ok(())
 }
