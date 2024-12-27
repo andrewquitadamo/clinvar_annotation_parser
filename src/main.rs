@@ -6,6 +6,26 @@ use std::error::Error;
 use std::fs::File;
 use std::io::{stdout, BufRead, BufReader, Read, Write};
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_val() {
+        assert_eq!(default_val(), "NA");
+    }
+
+    #[test]
+    fn test_ref_genome_hg19() {
+        assert_eq!(get_reference_genome(ReferenceGenome::Hg19), "GRCh37");
+    }
+
+    #[test]
+    fn test_ref_genome_hg38() {
+        assert_eq!(get_reference_genome(ReferenceGenome::Hg38), "GRCh38");
+    }
+}
+
 fn parse_genelist(genelist_filename: String) -> HashSet<String> {
     let mut gene_set = HashSet::new();
     let file = File::open(genelist_filename).expect("Failed to open genelist");
@@ -14,6 +34,14 @@ fn parse_genelist(genelist_filename: String) -> HashSet<String> {
         gene_set.insert(line.expect("Failed to parse gene"));
     }
     return gene_set;
+}
+
+fn get_reference_genome(reference: ReferenceGenome) -> String {
+    if reference == ReferenceGenome::Hg38 {
+        "GRCh38".to_string()
+    } else {
+        "GRCh37".to_string()
+    }
 }
 
 fn default_val() -> String {
@@ -129,11 +157,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut wtr = csv::WriterBuilder::new()
         .delimiter(b'\t')
         .from_writer(writer);
-    let ref_genome = if cli.reference == ReferenceGenome::Hg38 {
-        "GRCh38"
-    } else {
-        "GRCh37"
-    };
+    let ref_genome = get_reference_genome(cli.reference);
     for result in tsv_reader.deserialize() {
         let mut record: ClinVarRecord = result?;
         if use_gene_list && !gene_set.contains(&record.GeneSymbol) {
