@@ -20,3 +20,18 @@ Options:
 
 As written will output GeneSymbol, #AlleleID, Type, Name, C dot, P dot, ClinicalSignificance, PhenotypeIDS, PhenotypeList, Assembly, Chromosome, Start, Stop, ReviewStatus, PositionVCF, ReferenceAlleleVCF, AlternateAlleleVCF, OtherIDs.  
 Other fields can be included by uncommenting out the field name in the `ClinVarRecord` struct and recompiling. 
+
+Build from source
+---
+You will need Rust installed, along with the Cargo package manager. The compiled binary will be in `/target/release/clinvar_annotation_parser`.
+```
+git clone https://github.com/andrewquitadamo/clinvar_annotation_parser.git
+cargo build --release
+```
+
+Install from source
+---
+This will install `clinvar_annotation_parser`, and make it available to your local `PATH`. The install location will most likely be `$HOME/.cargo/bin`. 
+```
+cargo install --git https://github.com/andrewquitadamo/clinvar_annotation_parser.git
+```
